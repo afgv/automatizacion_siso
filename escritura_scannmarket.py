@@ -49,7 +49,7 @@ load_dotenv(find_dotenv(), override=True)
 PRODUCCION   = os.getenv("PRODUCCION", False)
 BASE_DOWNLOAD_DIR = r"C:\Users\adrian.garcia\Documents\descargas_drive\scannmarket"
 if PRODUCCION:
-    BASE_DOWNLOAD_DIR = r"/home/dato/Documents/descargas_drive/scannmarket"
+    BASE_DOWNLOAD_DIR = r"/opt/airflow/data/descargas_drive/scannmarket"
 
 GLOBAL_UNMATCHED_DIR = pathlib.Path(BASE_DOWNLOAD_DIR) / "no_mapeados_scann"
 GLOBAL_UNMATCHED_DIR.mkdir(parents=True, exist_ok=True)
