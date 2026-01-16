@@ -31,7 +31,7 @@ from unmatched import build_unmatched_prod, build_unmatched_loc
 PRODUCCION   = os.getenv("PRODUCCION", False)
 BASE_DOWNLOAD_DIR = r"C:\Users\adrian.garcia\Documents\descargas_drive\biggie"
 if PRODUCCION:
-    BASE_DOWNLOAD_DIR = r"/opt/airflow/data/descargas_drive/biggie"
+    BASE_DOWNLOAD_DIR = os.getenv("BASE_DOWNLOAD_DIR", "/opt/airflow/data/descargas_drive/biggie")
 
 # Mapeo categoría -> tabla destino
 CATEGORY_CONFIG = {
