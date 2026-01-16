@@ -19,11 +19,11 @@ from dotenv import load_dotenv, find_dotenv
 # carga .env (busca automáticamente hacia arriba)
 load_dotenv(find_dotenv(), override=True)
 
-from prod.auxiliar_date import month_name_es, month_file_candidates, month_boundaries, find_month_csv_for_category
+from auxiliar_date import month_name_es, month_file_candidates, month_boundaries, find_month_csv_for_category
 from notifications import get_drive_service_sa, send_email
-from prod.upload_to_drive import drive_upload_or_update_xlsx
+from upload_to_drive import drive_upload_or_update_xlsx
 from in_out_joins import read_fact_csv, read_dim_productos, read_dim_sucursales, join_validate, delete_month_from_table, insert_dataframe
-from prod.unmatched import build_unmatched_prod, build_unmatched_loc
+from unmatched import build_unmatched_prod, build_unmatched_loc
 
 # ============ CONFIGURACIÓN ============
 

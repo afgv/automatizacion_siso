@@ -35,7 +35,7 @@ from sqlalchemy.exc import DBAPIError
 from dotenv import load_dotenv, find_dotenv
 
 from notifications import get_drive_service_sa, send_email
-from prod.upload_to_drive import drive_upload_or_update_xlsx
+from upload_to_drive import drive_upload_or_update_xlsx
 
 
 # carga .env (busca automáticamente hacia arriba)
