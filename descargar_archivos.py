@@ -47,12 +47,12 @@ print(f"PRODUCCION: {PRODUCCION}")
 #    Local folder where reports will be saved
 DOWNLOAD_ROOT: pathlib.Path = pathlib.Path.home() / "Documents" / "descargas_drive" / "biggie"
 if PRODUCCION:
-    DOWNLOAD_ROOT = "/opt/airflow/data/descargas_drive/biggie"
+    DOWNLOAD_ROOT = Path("/opt/airflow/data/descargas_drive/biggie")
 DOWNLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
 DOWNLOAD_ROOT_SM = pathlib.Path.home() / "Documents" / "descargas_drive" / "scannmarket"
 if PRODUCCION:
-    DOWNLOAD_ROOT_SM = "/opt/airflow/data/descargas_drive/scannmarket"
+    DOWNLOAD_ROOT_SM = Path("/opt/airflow/data/descargas_drive/scannmarket")
 DOWNLOAD_ROOT_SM.mkdir(parents=True, exist_ok=True)
 
 SCANNMARKET_FOLDER_NAME = "SCANNMARKET"   # o pone SCANNMARKET_FOLDER_ID si lo tenés
