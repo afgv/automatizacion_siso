@@ -37,6 +37,9 @@ def str_to_bool(value: str) -> bool:
 PRODUCCION_STR   = os.getenv("PRODUCCION", False)
 PRODUCCION = str_to_bool(PRODUCCION_STR)
 
+print(f"PRODUCCION_STR: {PRODUCCION_STR}")
+print(f"PRODUCCION: {PRODUCCION}")
+
 # 1. Ruta local donde se guardarán los archivos descargados
 #    Local folder where reports will be saved
 DOWNLOAD_ROOT: pathlib.Path = pathlib.Path.home() / "Documents" / "descargas_drive" / "biggie"
