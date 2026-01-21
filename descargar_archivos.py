@@ -25,6 +25,9 @@ from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pickle
+from dotenv import load_dotenv, find_dotenv
+# carga .env (busca automáticamente hacia arriba)
+load_dotenv(find_dotenv(), override=True)
 
 # ---------------------------------------------------------------------------
 # Configuración / Configuration
