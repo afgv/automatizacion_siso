@@ -32,7 +32,7 @@ import pickle
 
 def str_to_bool(value: str) -> bool:
     "Transforma un string a booleano"
-    return value.lower() in ("true", "1", "yes", "on")
+    return str(value).lower() in ("true", "1", "yes", "on")
 
 PRODUCCION_STR   = os.getenv("PRODUCCION", False)
 PRODUCCION = str_to_bool(PRODUCCION_STR)
