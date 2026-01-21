@@ -171,13 +171,13 @@ def download_drive_file(service, file_id: str, destination: pathlib.Path) -> Non
             _, done = downloader.next_chunk()
 
 def debug_list_root_contents(service):
-    print("\n📁 Listando carpetas dentro de PALERMO_DATA_SET:")
+    print("\n Listando carpetas dentro de PALERMO_DATA_SET:")
     items = query_children(service, ROOT_FOLDER_ID, must_be_folder=True)
     for item in items:
         print(f"  - {item['name']} (ID: {item['id']})")
 
 def debug_list_all_visible_in_root(service):
-    print("\n🔎 Explorando todo lo que se ve dentro de PALERMO_DATA_SET:")
+    print("\n Explorando todo lo que se ve dentro de PALERMO_DATA_SET:")
     response = service.files().list(
         q=f"'{ROOT_FOLDER_ID}' in parents and trashed=false",
         fields="files(id, name, mimeType)",
@@ -191,7 +191,7 @@ def debug_list_all_visible_in_root(service):
         print("  (vacío)")
     else:
         for item in items:
-            tipo = "📁 Carpeta" if item["mimeType"] == "application/vnd.google-apps.folder" else "📄 Archivo"
+            tipo = " Carpeta" if item["mimeType"] == "application/vnd.google-apps.folder" else " Archivo"
             print(f"  {tipo}: {item['name']} (ID: {item['id']})")
 # ---------------------------------------------------------------------------
 # Lógica principal / Main logic
