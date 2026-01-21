@@ -27,8 +27,14 @@ from unmatched import build_unmatched_prod, build_unmatched_loc
 
 # ============ CONFIGURACIÓN ============
 
+def str_to_bool(value: str) -> bool:
+    "Transforma un string a booleano"
+    return value.lower() in ("true", "1", "yes", "on")
+
+
 # Carpeta raíz local donde el script de descarga guarda los CSVs por categoría
-PRODUCCION   = os.getenv("PRODUCCION", False)
+PRODUCCION_STR   = os.getenv("PRODUCCION", False)
+PRODUCCION = str_to_bool(PRODUCCION_STR)
 BASE_DOWNLOAD_DIR = r"C:\Users\adrian.garcia\Documents\descargas_drive\biggie"
 if PRODUCCION:
     BASE_DOWNLOAD_DIR = os.getenv("BASE_DOWNLOAD_DIR", "/opt/airflow/data/descargas_drive/biggie")

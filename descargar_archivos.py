@@ -30,12 +30,23 @@ import pickle
 # Configuración / Configuration
 # ---------------------------------------------------------------------------
 
+def str_to_bool(value: str) -> bool:
+    "Transforma un string a booleano"
+    return value.lower() in ("true", "1", "yes", "on")
+
+PRODUCCION_STR   = os.getenv("PRODUCCION", False)
+PRODUCCION = str_to_bool(PRODUCCION_STR)
+
 # 1. Ruta local donde se guardarán los archivos descargados
 #    Local folder where reports will be saved
 DOWNLOAD_ROOT: pathlib.Path = pathlib.Path.home() / "Documents" / "descargas_drive" / "biggie"
+if PRODUCCION:
+    DOWNLOAD_ROOT = "/opt/airflow/data/descargas_drive/biggie"
 DOWNLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
 DOWNLOAD_ROOT_SM = pathlib.Path.home() / "Documents" / "descargas_drive" / "scannmarket"
+if PRODUCCION:
+    DOWNLOAD_ROOT_SM = "/opt/airflow/data/descargas_drive/scannmarket"
 DOWNLOAD_ROOT_SM.mkdir(parents=True, exist_ok=True)
 
 SCANNMARKET_FOLDER_NAME = "SCANNMARKET"   # o pone SCANNMARKET_FOLDER_ID si lo tenés
