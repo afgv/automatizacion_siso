@@ -202,10 +202,10 @@ def find_prev_month_csv(base_dir: str, today: Optional[date] = None) -> Tuple[st
     Busca recursivamente el CSV del **mes anterior** bajo base_dir.
 
     Nombres aceptados (case-insensitive):
-      - Base_<mes><yyyy>.csv    ej: Base_octubre2025.csv
-      - Base-<mes><yyyy>.csv
-      - Base_<mes>_<yyyy>.csv   (robusto a subrayado)
-      - Base-<mes>-<yyyy>.csv   (robusto a guion)
+      - base_<mes><yyyy>.csv    ej: Base_octubre2025.csv
+      - base-<mes><yyyy>.csv
+      - base_<mes>_<yyyy>.csv   (robusto a subrayado)
+      - base-<mes>-<yyyy>.csv   (robusto a guion)
 
     <mes> admite 'septiembre' o 'setiembre'. Si hay varios matches,
     devuelve el más reciente por fecha de modificación.
