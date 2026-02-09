@@ -301,7 +301,7 @@ def fetch_and_download_monthly_reports() -> None:
         target_dir.mkdir(parents=True, exist_ok=True)
         destination_path = target_dir / target_name
         download_drive_file(service, file_match["id"], destination_path)
-        print(f"  ✅ Guardado en {destination_path}")
+        print(f"  Guardado en {destination_path}")
 
 def fetch_and_download_scannmarket() -> None:
     """Descarga el CSV del mes ANTERIOR de la carpeta SCANNMARKET (archivo: Base_MesAño*.csv)."""
@@ -331,7 +331,7 @@ def fetch_and_download_scannmarket() -> None:
     except NameError:
         folders = query_children(service, ROOT_FOLDER_ID, must_be_folder=True, name_equals=SCANNMARKET_FOLDER_NAME)
         if not folders:
-            print(f"❌ Carpeta {SCANNMARKET_FOLDER_NAME} no encontrada en la raíz.")
+            print(f" Carpeta {SCANNMARKET_FOLDER_NAME} no encontrada en la raíz.")
             return
         scann_folder_id = folders[0]["id"]
 
@@ -353,13 +353,13 @@ def fetch_and_download_scannmarket() -> None:
 
     if not file_match:
         disponibles = ", ".join(sorted(f['name'] for f in files))
-        print(f"⚠️ No encontré archivo Base_{month_es}{year_str}. En la carpeta hay: {disponibles}")
+        print(f" No encontré archivo Base_{month_es}{year_str}. En la carpeta hay: {disponibles}")
         return
 
     # descargar
     dest = DOWNLOAD_ROOT_SM / file_match["name"]
     download_drive_file(service, file_match["id"], dest)
-    print(f"✅ Scannmarket guardado en {dest}")
+    print(f" Scannmarket guardado en {dest}")
 
 
 if __name__ == "__main__":
