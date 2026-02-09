@@ -89,21 +89,29 @@ CLEAN_COLS: List[str] = [
 ]
 
 # Columnas de salida requeridas (en orden) + bandera booleana
+# Columnas de salida requeridas (en orden) + bandera booleana
 UNMATCHED_PROD_OUTPUT_COLS = [
     "para_escritura",
-    "Código Barras SKU",
-    "Nombre SKU",
-    "Marca SKU",
-    "Categoría SKU",
-    "Prod Clasif 6",
-    "Cant Contenido SKU",
-    "Proveedor SKU",
-    "Prod Clasif 7",
-    "Prod Clasif 3",
-    "Prod Clasif 4",
-    "Prod Clasif 5",
-    "Prod Clasif 10",
+    # === mismas columnas que dbo.dim_scannmarket_producto ===
+    "Id_Producto",
+    "Descripcion_del_Producto",
+    "Marca",
+    "Categoria",
+    "Segmento",
+    "Sub_Segmento",
+    "Variedades",
+    "Presentacion_Producto",
+    "Proveedor",
+    "Palermo_Otros",
+    "especialidad",
+    "talle",
+    "unidades",
+    "Gramos",
+    "es_promo",
+    "Empaque",
+    "clasificacion",
 ]
+
 
 UNMATCHED_LOC_OUTPUT_COLS = [
     "para_escritura",
@@ -305,6 +313,30 @@ def _ensure_and_order(df: pd.DataFrame, ordered_cols: list) -> pd.DataFrame:
             df[c] = pd.NA
     return df[ordered_cols]
 
+def _pick_first(df: pd.DataFrame, *candidates) -> Optional[str]:
+    """Devuelve el primer nombre de columna existente en df según el orden de candidates."""
+    for c in candidates:
+        if c in df.columns:
+            return c
+    return None
+
+def _derive_presentacion_from_grams(v, categoria_str: str) -> str:
+    """
+    Construye la Presentacion_Producto a partir del contenido (gr/ml).
+    Heurística básica: si la categoría contiene 'BEBID' o 'CAÑ', usamos 'ML.'; si no, 'GR.'.
+    """
+    if pd.isna(v) or str(v).strip() == "":
+        return "-"
+    try:
+        num = int(float(str(v).replace(",", ".").strip()))
+    except Exception:
+        return str(v).strip()  # deja tal cual si no se puede parsear
+    cat = (categoria_str or "").upper()
+    if ("BEBID" in cat) or ("CAÑ" in cat) or ("VINO" in cat) or ("CERVE" in cat):
+        return f"{num} ML."
+    return f"{num} GR."
+
+
 def build_unmatched_dfs_strict(df_src: pd.DataFrame,
                                dim_prod_db: pd.DataFrame,
                                dim_pdv_db: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -313,32 +345,83 @@ def build_unmatched_dfs_strict(df_src: pd.DataFrame,
     con EXACTAMENTE las columnas pedidas + 'para_escritura' al inicio.
     """
     # ================== PRODUCTOS ==================
-    # claves de productos existentes en DIM
     prod_keys = set(dim_prod_db["Id_Producto"].astype(str)) if "Id_Producto" in dim_prod_db.columns else set()
-    # localizar nombre real de "Código Barras SKU" en df_src
-    prod_map = _map_cols_case_insensitive(df_src, ["Código Barras SKU"])
-    codigo_barras_col = prod_map["Código Barras SKU"]
-    if codigo_barras_col is None:
+
+    # nombres reales (ya normalizaste a minúsculas antes en el pipeline)
+    col_codigo  = _map_cols_case_insensitive(df_src, ["Código Barras SKU"]).get("Código Barras SKU")
+    col_nombre  = _map_cols_case_insensitive(df_src, ["Nombre SKU"]).get("Nombre SKU")
+    col_marca   = _map_cols_case_insensitive(df_src, ["Marca SKU"]).get("Marca SKU")
+    col_cat     = _map_cols_case_insensitive(df_src, ["Categoría SKU"]).get("Categoría SKU")
+    col_prov    = _map_cols_case_insensitive(df_src, ["Proveedor SKU"]).get("Proveedor SKU")
+    col_cont    = _map_cols_case_insensitive(df_src, ["Cant Contenido SKU"]).get("Cant Contenido SKU")
+
+    # Clasificaciones jerárquicas (tomamos una jerarquía razonable)
+    col_p3  = _map_cols_case_insensitive(df_src, ["Prod Clasif 3"]).get("Prod Clasif 3")   # Segmento
+    col_p4  = _map_cols_case_insensitive(df_src, ["Prod Clasif 4"]).get("Prod Clasif 4")   # Sub_Segmento
+    col_p5  = _map_cols_case_insensitive(df_src, ["Prod Clasif 5"]).get("Prod Clasif 5")   # Variedades
+    col_p6  = _map_cols_case_insensitive(df_src, ["Prod Clasif 6"]).get("Prod Clasif 6")   # especialidad
+    col_p7  = _map_cols_case_insensitive(df_src, ["Prod Clasif 7"]).get("Prod Clasif 7")   # clasificacion
+    col_p10 = _map_cols_case_insensitive(df_src, ["Prod Clasif 10"]).get("Prod Clasif 10") # Empaque
+
+    if col_codigo is None:
         raise KeyError("No se encontró la columna 'Código Barras SKU' en la fuente para construir no matcheados de productos.")
 
-    mask_prod_unmatched = ~df_src[codigo_barras_col].astype(str).isin(prod_keys)
+    # filas cuyo Id_Producto NO existe en la DIM
+    mask_prod_unmatched = ~df_src[col_codigo].astype(str).isin(prod_keys)
     prod_base = df_src.loc[mask_prod_unmatched].copy()
 
-    # deduplicar por código de barras
-    prod_base = prod_base.sort_index()
-    prod_base = prod_base.drop_duplicates(subset=[codigo_barras_col])
+    # dedup por código de barras
+    prod_base = prod_base.sort_index().drop_duplicates(subset=[col_codigo])
 
-    # seleccionar columnas objetivo (buscándolas en df_src por nombre real)
-    prod_cols_map = _map_cols_case_insensitive(prod_base, UNMATCHED_PROD_OUTPUT_COLS[1:])  # salvo 'para_escritura'
-    # construir df con nombres EXACTOS de salida
+    # construir salidas con nombres EXACTOS de la DIM
     prod_out = pd.DataFrame(index=prod_base.index)
-    for desired, existing in prod_cols_map.items():
-        prod_out[desired] = prod_base[existing] if existing else pd.NA
+    prod_out["Id_Producto"]              = prod_base[col_codigo] if col_codigo else pd.NA
+    prod_out["Descripcion_del_Producto"] = prod_base[col_nombre] if col_nombre else pd.NA
+    prod_out["Marca"]                    = prod_base[col_marca]  if col_marca  else pd.NA
+    prod_out["Categoria"]                = prod_base[col_cat]    if col_cat    else pd.NA
 
-    # bandera booleana al inicio
+    # jerarquías (elige la mejor disponible)
+    prod_out["Segmento"]       = prod_base[col_p3]  if col_p3  else pd.NA
+    prod_out["Sub_Segmento"]   = prod_base[col_p4]  if col_p4  else pd.NA
+    prod_out["Variedades"]     = prod_base[col_p5]  if col_p5  else pd.NA
+    prod_out["especialidad"]   = prod_base[col_p6]  if col_p6  else pd.NA
+    prod_out["clasificacion"]  = prod_base[col_p7]  if col_p7  else pd.NA
+    prod_out["Empaque"]        = prod_base[col_p10] if col_p10 else pd.NA
+
+    # proveedor
+    prod_out["Proveedor"] = prod_base[col_prov] if col_prov else pd.NA
+
+    # contenido → Gramos (numérico) + Presentacion_Producto (texto)
+    if col_cont:
+        grams = pd.to_numeric(
+            prod_base[col_cont].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
+            errors="coerce"
+        )
+        prod_out["Gramos"] = grams
+    else:
+        prod_out["Gramos"] = pd.NA
+
+    # Presentacion_Producto (ej. "85 GR." / "900 ML.")
+    if col_cont:
+        cat_series = prod_out["Categoria"].astype(str)
+        prod_out["Presentacion_Producto"] = [
+            _derive_presentacion_from_grams(v, c) for v, c in zip(prod_base[col_cont], cat_series)
+        ]
+    else:
+        prod_out["Presentacion_Producto"] = "-"
+
+    # defaults que no vienen en SCANN (alineados a ejemplos de la DIM)
+    prod_out["Palermo_Otros"] = "OTROS"
+    prod_out["talle"]         = "-"
+    prod_out["unidades"]      = 0
+    prod_out["es_promo"]      = "NO"
+
+    # bandera al inicio
     prod_out.insert(0, "para_escritura", False)
-    # asegurar orden final
+
+    # asegurar orden exacto
     prod_out = _ensure_and_order(prod_out, UNMATCHED_PROD_OUTPUT_COLS)
+    prod_out = prod_out.reset_index(drop=True)
 
     # ================== LOCALES ===================
     loc_keys = set(dim_pdv_db["Id_Comercial"].astype(str)) if "Id_Comercial" in dim_pdv_db.columns else set()
