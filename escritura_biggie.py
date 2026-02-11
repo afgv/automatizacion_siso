@@ -45,7 +45,7 @@ CATEGORY_CONFIG = {
     "VAPES":         {"table": "siso.fact_biggie_vapeadores",  "dir": "VAPES"},
     "PANALES":      {"table": "siso.fact_biggie_panales",     "dir": "PANALES"},
     # "CARAMELOS":    {"table": "siso.fact_biggie_golosinas",   "dir": "CARAMELOS"},
-    "BALANCEADOS":  {"table": "siso.fact_biggie_balanceados", "dir": "BALANCEADOS"},
+    # "BALANCEADOS":  {"table": "siso.fact_biggie_balanceados", "dir": "BALANCEADOS"},
     "CIGARRILLOS":  {"table": "siso.fact_biggie_cigarrillos", "dir": "CIGARRILLOS"},
 }
 
@@ -168,6 +168,28 @@ def normalize_barcode(value) -> str | None:
 
     return digits if digits else None
 
+def print_first_bad_numeric(df: pd.DataFrame, col: str, context_cols: list[str], label: str = ""):
+    s = df[col].astype(str).str.strip()
+
+    # intenta convertir (solo para detectar; NO modifica df)
+    num = pd.to_numeric(s, errors="coerce")
+
+    # “malos” = no se pudieron convertir, pero tampoco son vacíos típicos
+    bad = num.isna() & ~s.isin(["", "nan", "None"]) & s.notna()
+
+    if bad.any():
+        i = bad[bad].index[0]
+        print("\n" + "="*90)
+        print(f"❌ PRIMER REGISTRO PROBLEMÁTICO {label} en columna: '{col}'")
+        print(f"Valor original: {repr(s.loc[i])}")
+        cols = [c for c in context_cols if c in df.columns] + [col]
+        print(df.loc[i, cols])
+        print("\nTop valores problemáticos (muestra):")
+        print(s[bad].value_counts().head(20))
+        print("="*90 + "\n")
+
+        # cortar ejecución para que veas el primero
+        raise ValueError(f"Primer valor no numérico en {col}: {repr(s.loc[i])}")
 
 def process_category(category: str, engine, today: Optional[date]=None,
                      productos_no_match: Optional[pd.DataFrame]=None,
@@ -203,7 +225,19 @@ def process_category(category: str, engine, today: Optional[date]=None,
     #     df_fact["unidades vendidas"]     = df_fact["unidades vendidas"].astype(float)
     # else:
     #     df_fact["unidades vendidas"]     = df_fact["unidades vendidas"].astype(int)
+    print_first_bad_numeric(
+        df_fact,
+        col="unidades vendidas",
+        context_cols=["fecha", "id_sucursal", "codigo de barras"],
+        label=f"[{category}] (df_fact)"
+    )
     df_fact["unidades vendidas"]     = df_fact["unidades vendidas"].astype(float)
+    print_first_bad_numeric(
+        df_fact,
+        col="total facturado",
+        context_cols=["fecha", "id_sucursal", "codigo de barras"],
+        label=f"[{category}] (df_fact)"
+    )
     df_fact["total facturado"]       = df_fact["total facturado"].astype(float)
 
     # Validar contra dimensión productos
@@ -242,7 +276,7 @@ def process_category(category: str, engine, today: Optional[date]=None,
     # send_email(mensaje, tipo_correo, category, unmatched_prod, None)
     if len(productos_no_match) or len(locales_no_match):
         send_email(
-            subject="[SCANN MARKET] Nuevos registros no mapeados",
+            subject="[Biggie] Nuevos registros no mapeados",
             body=(f"Productos sin mapear: {len(productos_no_match)}\n"
                 f"Locales sin mapear: {len(locales_no_match)}\n"
                 "Revisar los Excel en la carpeta no_mapeados / Drive.")
@@ -270,6 +304,12 @@ def process_category(category: str, engine, today: Optional[date]=None,
         datos_ok_df["fardos"] = datos_ok_df["gramaje"] * datos_ok_df["unidades vendidas"] * (30/1000000/0.0058)
         datos_ok_df["unidades"] = datos_ok_df["gramaje"]*datos_ok_df["unidades vendidas"]
     elif category == "CIGARRILLOS":
+        print_first_bad_numeric(
+            datos_ok_df,
+            col="presentacion",
+            context_cols=["fecha", "id_sucursal", "codigo de barras", "descripcion"],
+            label=f"[{category}] (datos_ok_df)"
+        )
         datos_ok_df["presentacion"] = datos_ok_df["presentacion"].astype(float)
         datos_ok_df["cajas"] = (datos_ok_df["presentacion"] * datos_ok_df["unidades vendidas"])/10000
     else:
