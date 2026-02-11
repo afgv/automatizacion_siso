@@ -79,6 +79,7 @@ MONTH_NAMES_ES = {
 }
 
 # 5. Categorías esperadas (corresponden a nombres de subcarpetas)
+#CATEGORIES = ["YERBA", "VAPES", "PANALES", "CARAMELOS", "CIGARRILLOS"]
 CATEGORIES = ["YERBA", "VAPES", "PANALES", "CARAMELOS", "BALANCEADOS", "CIGARRILLOS"]
 
 MONTH_ALIASES = {
