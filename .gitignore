@@ -6,6 +6,7 @@ __pycache__/
 #Archivos json con claves
 credentials.json
 service_account.json
+token_drive.pickle
 
 #Archivos de Descarga
 errores_scann/
