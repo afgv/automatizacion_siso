@@ -4,25 +4,25 @@ import io
 import json
 from typing import List, Tuple
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import pandas as pd
 from sqlalchemy import create_engine
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 from google.oauth2 import service_account
 
-load_dotenv(dotenv_path=".env")
+load_dotenv(find_dotenv(), override=True)
 # ---------------------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------------------
 # ⬅⬅⬅ PONÉ AQUÍ EL ID DE LA CARPETA (en Unidad compartida) "Registros no mapeados"
-FOLDER_ID_SHARED = os.getenv("FOLDER_ID_SHARED", "")
+FOLDER_ID_SHARED = os.getenv("FOLDER_ID_SHARED", "1qswVfDCZHlq3XGw383ZHe_Onl_U4hHcl")
 
 # Ruta del JSON de la Service Account (o usá variable de entorno para pasarlo inline)
 SERVICE_ACCOUNT_JSON_PATH = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_PATH", "service_account.json")
 
 # Tabla destino
-SQL_TARGET_SCHEMA = "dbo"
+SQL_TARGET_SCHEMA = "siso"
 SQL_TARGET_TABLE_PRODUCTS  = "dim_biggie_productos"  # inserta solo productos
 SQL_TARGET_TABLE_LOCALS  = "dim_biggie_locales"  # inserta solo locales
 
@@ -351,11 +351,12 @@ def process_locales_file(engine, service, file_id: str, file_name: str) -> int:
     dbg("\n===== LOCALES: {} =====", file_name)
     dump_df(df, "df_locales_original", max_rows=8)
 
-    vals = df["para_escritura"].astype(str).unique().tolist()
-    print("Valores crudos únicos en para_escritura:", [repr(v) for v in vals])
-
     # 2) Normalizar booleana como en productos
     df = normalize_para_escritura_col(df)
+
+    if "para_escritura" in df.columns:
+        vals = df["para_escritura"].astype(str).unique().tolist()
+        print("Valores crudos únicos en para_escritura:", [repr(v) for v in vals])
     dump_df(df, "df_locales_normalizado", max_rows=8)
 
     # 3) Split TRUE / FALSE
