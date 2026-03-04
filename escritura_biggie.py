@@ -24,6 +24,7 @@ from notifications import get_drive_service_sa, send_email
 from upload_to_drive import drive_upload_or_update_xlsx
 from in_out_joins import read_fact_csv, read_dim_productos, read_dim_sucursales, join_validate, delete_month_from_table, insert_dataframe
 from unmatched import build_unmatched_prod, build_unmatched_loc
+from farma_mapping import FARMA_MAPPING, apply_farma_mapping
 
 # ============ CONFIGURACIÓN ============
 
