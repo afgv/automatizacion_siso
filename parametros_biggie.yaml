@@ -5,7 +5,7 @@
 # Entorno de ejecución.
 # false → usa BASE_DOWNLOAD_DIR local (desarrollo).
 # true  → toma BASE_DOWNLOAD_DIR del entorno (Airflow/producción).
-produccion: true
+produccion: false
 
 # Carpeta raíz local donde el script de descarga guarda los CSVs por categoría.
 # Solo se usa cuando produccion: false.
