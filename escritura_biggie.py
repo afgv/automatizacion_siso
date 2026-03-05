@@ -28,62 +28,67 @@ from farma_mapping import FARMA_MAPPING, apply_farma_mapping
 
 # ============ CONFIGURACIÓN ============
 
+import yaml
+
 def str_to_bool(value: str) -> bool:
     "Transforma un string a booleano"
     return value.lower() in ("true", "1", "yes", "on")
 
+def _load_config(path: str = "parametros_biggie.yaml") -> dict:
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
-# Carpeta raíz local donde el script de descarga guarda los CSVs por categoría
-PRODUCCION_STR   = os.getenv("PRODUCCION", False)
-PRODUCCION = str_to_bool(PRODUCCION_STR)
-BASE_DOWNLOAD_DIR = r"C:\Users\adrian.garcia\Documents\descargas_drive\biggie"
-if PRODUCCION:
-    BASE_DOWNLOAD_DIR = os.getenv("BASE_DOWNLOAD_DIR", "/opt/airflow/data/descargas_drive/biggie")
+_CFG = _load_config()
 
-# Mapeo categoría -> tabla destino
+# --- Entorno y rutas ---
+PRODUCCION_STR = os.getenv("PRODUCCION", str(_CFG.get("produccion", False)))
+PRODUCCION     = str_to_bool(str(PRODUCCION_STR))
+BASE_DOWNLOAD_DIR = (
+    os.getenv("BASE_DOWNLOAD_DIR", "/opt/airflow/data/descargas_drive/biggie")
+    if PRODUCCION
+    else _CFG["base_download_dir_local"]
+)
+
+# --- Categorías activas (enabled: true en el YAML) ---
 CATEGORY_CONFIG = {
-    "YERBA":        {"table": "siso.fact_biggie_yerbamate",   "dir": "YERBA"},
-    "VAPES":         {"table": "siso.fact_biggie_vapeadores",  "dir": "VAPES"},
-    "PANALES":      {"table": "siso.fact_biggie_panales",     "dir": "PANALES"},
-    # "CARAMELOS":    {"table": "siso.fact_biggie_golosinas",   "dir": "CARAMELOS"},
-    # "BALANCEADOS":  {"table": "siso.fact_biggie_balanceados", "dir": "BALANCEADOS"},
-    "CIGARRILLOS":  {"table": "siso.fact_biggie_cigarrillos", "dir": "CIGARRILLOS"},
+    name: {"table": cat["table"], "dir": cat["dir"]}
+    for name, cat in _CFG["categories"].items()
+    if cat.get("enabled", False)
 }
 
-# Columna fecha en el CSV/tabla fact (ajusta si tu campo se llama diferente)
-FACT_DATE_COLUMN = "fecha"
+# --- Tabla fact ---
+FACT_DATE_COLUMN = _CFG.get("fact_date_column", "fecha")
 
+# --- Joins con dimensiones ---
 JOIN_CONFIG = {
-    "productos": {
-        "dim_table": "siso.dim_biggie_productos",
-        "fact_key":  "codigo de barras",         # columna en el CSV/Hecho
-        "dim_key":   "ean",                     # columna en la dimensión
-        "pad_to":    13,   # EAN-13 (opcional)
-    },
-    "sucursales": {
-        "dim_table": "siso.dim_biggie_locales",  # ajustá al nombre real
-        "fact_key":  "id_sucursal",             # columna en el CSV/Hecho
-        "dim_key":   "id_sucursal_bg",          # columna en la dimensión
-        "pad_to":    None,
-    },
+    key: {
+        "dim_table": val["dim_table"],
+        "fact_key":  val["fact_key"],
+        "dim_key":   val["dim_key"],
+        "pad_to":    val.get("pad_to"),
+    }
+    for key, val in _CFG["join_config"].items()
 }
 
-# Si TRUE, no ejecuta DELETE/INSERT; solo muestra lo que haría
-DRY_RUN = False
+# --- Flags de comportamiento ---
+DRY_RUN             = _CFG.get("dry_run", False)
+INSERT_ONLY_MATCHED = _CFG.get("insert_only_matched", True)
+UNMATCHED_SUBFOLDER = _CFG.get("unmatched_subfolder", "_no_mapeados")
 
-# Si TRUE, inserta únicamente filas que hicieron match con la dimensión; si FALSE, inserta todo
-INSERT_ONLY_MATCHED = True
+# --- Google Drive ---
+FOLDER_ID_NO_MAPEADOS = _CFG.get("folder_id_no_mapeados", "")
 
-# Nombre de la carpeta donde se guardarán los "no mapeados"
-UNMATCHED_SUBFOLDER = "_no_mapeados"
+# --- Columnas de dimensiones (para Excel de no mapeados) ---
+DIM_PRODUCTOS_COLS = _CFG["dim_productos_cols"]
+DIM_LOCALES_COLS   = _CFG["dim_locales_cols"]
 
-# Conexión a SQL Server por ODBC (rellena o usa variables de entorno)
+# --- Credenciales: se mantienen en .env (sin cambios) ---
 SQL_SERVER   = os.getenv("SERVER", "")
 SQL_DATABASE = os.getenv("DATABASE", "")
 SQL_DRIVER   = os.getenv("ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
-ENCRYPT      = os.getenv("ODBC_ENCRYPT", "yes")             # yes|no
-TRUST_CERT   = os.getenv("ODBC_TRUST_SERVER_CERT", "yes")   # yes|no
-TIMEOUT      = os.getenv("ODBC_TIMEOUT")                    # ej. "30"
+ENCRYPT      = os.getenv("ODBC_ENCRYPT", "yes")
+TRUST_CERT   = os.getenv("ODBC_TRUST_SERVER_CERT", "yes")
+TIMEOUT      = os.getenv("ODBC_TIMEOUT")
 
 SQL_UID = os.getenv("SQL_USERNAME")
 SQL_PWD = os.getenv("SQL_PASSWORD")
@@ -96,26 +101,8 @@ EMAIL_TO    = [addr.strip() for addr in os.getenv("EMAIL_TO", "").split(",") if 
 
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 DELEGATED_USER       = os.getenv("GOOGLE_DELEGATED_USER")
-SCOPES               = ["https://www.googleapis.com/auth/gmail.send"]
-DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]  # acceso completo a Drive
-
-# FOLDER_ID_NO_MAPEADOS = "1O7YO67At_am2hMwKBkzdbM5Qq3TNHRO6"
-FOLDER_ID_NO_MAPEADOS = "1qswVfDCZHlq3XGw383ZHe_Onl_U4hHcl"
-
-# Columnas oficiales de dim_productos
-DIM_PRODUCTOS_COLS = [
-    "producto", "proveedor", "categoria", "marca",
-    "clasificacion", "presentacion", "variedad", "talle", "segmento",
-    "promocion", "ean", "gramaje", "sub_segmento", "sub_marca",
-    "sabor", "especialidad", "sub_categoria", "para_escritura"
-]
-
-# Columnas oficiales de dim_biggie_locales
-DIM_LOCALES_COLS = [
-    "id_sucursal_bg", "nombre_local", "latitud", "longitud", "ciudad",
-    "cod_cliente_palermo", "autocompra", "compra_balanceado",
-    "AC_yerba_exhibidores", "ac_pod_cigarreras", "para_escritura"
-]
+SCOPES       = ["https://www.googleapis.com/auth/gmail.send"]
+DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 def build_engine():
     parts = [

@@ -1,0 +1,129 @@
+# =======================
+# CONFIGURACIÓN PRINCIPAL
+# =======================
+
+# Entorno de ejecución.
+# false → usa BASE_DOWNLOAD_DIR local (desarrollo).
+# true  → toma BASE_DOWNLOAD_DIR del entorno (Airflow/producción).
+produccion: false
+
+# Carpeta raíz local donde el script de descarga guarda los CSVs por categoría.
+# Solo se usa cuando produccion: false.
+base_download_dir_local: "C:/Users/adrian.garcia/Documents/descargas_drive/biggie"
+
+# Si true → no ejecuta DELETE/INSERT; solo imprime lo que haría.
+dry_run: false
+
+# Si true → inserta únicamente filas que hicieron match con la dimensión.
+# Si false → inserta todo (incluyendo no matcheados).
+insert_only_matched: true
+
+# Nombre de la subcarpeta donde se guardan los archivos de no mapeados.
+unmatched_subfolder: "_no_mapeados"
+
+# Google Drive: ID de la carpeta destino para subir los Excel de no mapeados.
+folder_id_no_mapeados: "1qswVfDCZHlq3XGw383ZHe_Onl_U4hHcl"
+
+
+# =======================
+# CATEGORÍAS
+# =======================
+# Cada entrada define una categoría a procesar.
+# enabled: true  → se incluye en la corrida.
+# enabled: false → se omite (equivalente a comentar en el dict anterior).
+
+categories:
+  YERBA:
+    enabled: true
+    table: "siso.fact_biggie_yerbamate"
+    dir: "YERBA"
+
+  VAPES:
+    enabled: true
+    table: "siso.fact_biggie_vapeadores"
+    dir: "VAPES"
+
+  PANALES:
+    enabled: true
+    table: "siso.fact_biggie_panales"
+    dir: "PANALES"
+
+  CARAMELOS:
+    enabled: false
+    table: "siso.fact_biggie_golosinas"
+    dir: "CARAMELOS"
+
+  BALANCEADOS:
+    enabled: false
+    table: "siso.fact_biggie_balanceados"
+    dir: "BALANCEADOS"
+
+  CIGARRILLOS:
+    enabled: true
+    table: "siso.fact_biggie_cigarrillos"
+    dir: "CIGARRILLOS"
+
+
+# =======================
+# TABLA FACT
+# =======================
+
+# Nombre de la columna fecha en la tabla fact (para el DELETE por mes).
+fact_date_column: "fecha"
+
+
+# =======================
+# JOINS CON DIMENSIONES
+# =======================
+
+join_config:
+  productos:
+    dim_table: "siso.dim_biggie_productos"
+    fact_key:  "codigo de barras"   # columna en el CSV/Hecho
+    dim_key:   "ean"                # columna en la dimensión
+    pad_to:    13                   # EAN-13; null para no aplicar padding
+
+  sucursales:
+    dim_table: "siso.dim_biggie_locales"
+    fact_key:  "id_sucursal"        # columna en el CSV/Hecho
+    dim_key:   "id_sucursal_bg"     # columna en la dimensión
+    pad_to:    null
+
+
+# =======================
+# COLUMNAS DE DIMENSIONES
+# (definen el esquema de los Excel de no mapeados)
+# =======================
+
+dim_productos_cols:
+  - producto
+  - proveedor
+  - categoria
+  - marca
+  - clasificacion
+  - presentacion
+  - variedad
+  - talle
+  - segmento
+  - promocion
+  - ean
+  - gramaje
+  - sub_segmento
+  - sub_marca
+  - sabor
+  - especialidad
+  - sub_categoria
+  - para_escritura
+
+dim_locales_cols:
+  - id_sucursal_bg
+  - nombre_local
+  - latitud
+  - longitud
+  - ciudad
+  - cod_cliente_palermo
+  - autocompra
+  - compra_balanceado
+  - AC_yerba_exhibidores
+  - ac_pod_cigarreras
+  - para_escritura
