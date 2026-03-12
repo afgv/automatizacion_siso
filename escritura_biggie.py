@@ -208,6 +208,9 @@ def process_category(category: str, engine, today: Optional[date]=None,
     df_fact = read_fact_csv(csv_path)
     print(f"[{category}] Filas en CSV: {len(df_fact):,}")
 
+    #Se agrega el mapeo de farmacias a locales de Biggie
+    # df_fact = apply_farma_mapping(df_fact, FARMA_MAPPING)
+
     #4.2 Se pasa a int las columnas necesarios para calculos posteriores
     # if category == "BALANCEADOS":
     #     df_fact["unidades vendidas"]     = df_fact["unidades vendidas"].astype(float)

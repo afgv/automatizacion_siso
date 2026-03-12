@@ -81,13 +81,13 @@ join_config:
     dim_table: "siso.dim_biggie_productos"
     fact_key:  "codigo de barras"   # columna en el CSV/Hecho
     dim_key:   "ean"                # columna en la dimensión
-    pad_to:    13                   # EAN-13; null para no aplicar padding
+    pad_to:    13                   # EAN-13; null para no aplicar padding -> IGNORAR
 
   sucursales:
     dim_table: "siso.dim_biggie_locales"
     fact_key:  "id_sucursal"        # columna en el CSV/Hecho
     dim_key:   "id_sucursal_bg"     # columna en la dimensión
-    pad_to:    null
+    pad_to:    null                 # IGNORAR
 
 
 # =======================
